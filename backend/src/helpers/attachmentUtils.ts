@@ -3,4 +3,16 @@ import * as AWSXRay from 'aws-xray-sdk'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
-// TODO: Implement the fileStogare logic
+export function getPutSignedUrl(
+  bucket: string,
+  key: string,
+  expires: number
+): string {
+  const s3 = new XAWS.AWS.S3({ signatureVersion: 'v4' })
+
+  return s3.getSignedUrl('putObject', {
+    Bucket: bucket,
+    Key: key,
+    Expires: expires
+  })
+}
