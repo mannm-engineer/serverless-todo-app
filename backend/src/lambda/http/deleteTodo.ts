@@ -1,25 +1,27 @@
 import 'source-map-support/register'
+
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import * as middy from 'middy'
 import { cors, httpErrorHandler } from 'middy/middlewares'
 
 import { createLogger } from '../../utils/logger'
+import { getUserId } from '../../auth/utils'
 import { deleteTodo } from '../../service/todoService'
 
-const logger = createLogger('deleteTodo')
+const logger = createLogger('updateTodo')
 
 export const handler = middy(
   async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    logger.info('Processing DeleteTodo event...')
-
     try {
       const todoId = event.pathParameters.todoId
+      const userId: string = getUserId(event)
 
-      await deleteTodo(todoId)
-      logger.info(`Successfully deleted todo: ${todoId}`)
+      await deleteTodo(userId, todoId)
+      logger.info(`Successfully deleted todo item: ${todoId}`)
 
       return {
-        statusCode: 204
+        statusCode: 204,
+        body: undefined
       }
     } catch (error) {
       logger.error(`Error: ${error.message}`)

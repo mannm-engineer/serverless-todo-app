@@ -16,14 +16,16 @@ export const handler = middy(
 
     try {
       const userId: string = getUserId(event)
-      
+
       const todos: Todo[] = await getTodos(userId)
 
       logger.info('Successfully retrieved todolist')
 
       return {
         statusCode: 200,
-        body: JSON.stringify(todos)
+        body: JSON.stringify({
+          items: todos
+        })
       }
     } catch (error) {
       logger.error(`Error: ${error.message}`)

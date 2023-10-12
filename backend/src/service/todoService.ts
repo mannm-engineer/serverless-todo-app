@@ -1,5 +1,5 @@
 import * as uuid from 'uuid'
-import * as createError from 'http-errors'
+// import * as createError from 'http-errors'
 
 import { getPutSignedUrl } from '../helpers/attachmentUtils'
 import { TodoRepository } from '../repository/todoRepository'
@@ -30,6 +30,7 @@ export async function createTodo(
 }
 
 export async function updateTodo(
+  userId: string,
   todoId: string,
   updateTodoRequest: UpdateTodoRequest
 ): Promise<void> {
@@ -37,21 +38,25 @@ export async function updateTodo(
     ...updateTodoRequest
   }
 
-  return todoRepository.updateTodo(todoId, todoUpdate)
+  return todoRepository.updateTodo(userId, todoId, todoUpdate)
 }
 
-export async function deleteTodo(todoId: string): Promise<void> {
-  return todoRepository.deleteTodo(todoId)
+export async function deleteTodo(
+  userId: string,
+  todoId: string
+): Promise<void> {
+  return todoRepository.deleteTodo(userId, todoId)
 }
 
 export async function createAttachmentPresignedUrl(
+  userId: string,
   todoId: string
 ): Promise<string> {
-  const bucket = process.env.IMAGES_S3_BUCKET
+  const bucket = process.env.ATTACHMENT_S3_BUCKET
   const expires = parseInt(process.env.SIGNED_URL_EXPIRATION, 10)
 
   const signedUrl = getPutSignedUrl(bucket, todoId, expires)
-  await todoRepository.updateTodoAttachmentUrl(todoId, bucketName)
+  await todoRepository.updateTodoAttachmentUrl(userId, todoId, bucket)
 
   return signedUrl
 }

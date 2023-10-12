@@ -6,8 +6,6 @@ import { createLogger } from '../utils/logger'
 import { Todo } from '../models/Todo'
 import { TodoUpdate } from '../models/TodoUpdate'
 
-const XAWS = AWSXRay.captureAWS(AWS)
-
 const logger = createLogger('TodoRepository')
 
 export class TodoRepository {
@@ -45,15 +43,20 @@ export class TodoRepository {
     return todo
   }
 
-  async updateTodo(todoId: string, todoUpdate: TodoUpdate): Promise<void> {
+  async updateTodo(
+    userId: string,
+    todoId: string,
+    todoUpdate: TodoUpdate
+  ): Promise<void> {
     logger.info(`Updating a todo: ${todoId}`)
 
     await this.docClient
       .update({
         TableName: this.todosTable,
-        Key: { todoId },
+        Key: { userId, todoId },
         ConditionExpression: 'attribute_exists(todoId)',
-        UpdateExpression: 'set #name = :name, dueDate = :dueDate, done = :done',
+        UpdateExpression: 'set #n = :name, dueDate = :dueDate, done = :done',
+        ExpressionAttributeNames: { '#n': 'name' },
         ExpressionAttributeValues: {
           ':name': todoUpdate.name,
           ':dueDate': todoUpdate.dueDate,
@@ -63,18 +66,19 @@ export class TodoRepository {
       .promise()
   }
 
-  async deleteTodo(todoId: string): Promise<void> {
+  async deleteTodo(userId: string, todoId: string): Promise<void> {
     logger.info(`Deleting a todo: ${todoId}`)
 
     await this.docClient
       .delete({
         TableName: this.todosTable,
-        Key: { todoId }
+        Key: { userId, todoId }
       })
       .promise()
   }
 
   async updateTodoAttachmentUrl(
+    userId: string,
     todoId: string,
     bucketName: string
   ): Promise<void> {
@@ -83,7 +87,7 @@ export class TodoRepository {
     await this.docClient
       .update({
         TableName: this.todosTable,
-        Key: { todoId },
+        Key: { userId, todoId },
         ConditionExpression: 'attribute_exists(todoId)',
         UpdateExpression: 'set attachmentUrl = :attachmentUrl',
         ExpressionAttributeValues: {
@@ -95,13 +99,22 @@ export class TodoRepository {
 }
 
 function createDynamoDBClient() {
+  let client: DocumentClient
+
   if (process.env.IS_OFFLINE) {
     logger.debug('Creating a local DynamoDB instance')
-    return new XAWS.DynamoDB.DocumentClient({
+    client = new AWS.DynamoDB.DocumentClient({
+      service: new AWS.DynamoDB(),
       region: 'localhost',
       endpoint: 'http://localhost:8000'
     })
   }
 
-  return new XAWS.DynamoDB.DocumentClient()
+  client = new AWS.DynamoDB.DocumentClient({
+    service: new AWS.DynamoDB()
+  })
+
+  AWSXRay.captureAWSClient((client as any).service)
+
+  return client;
 }

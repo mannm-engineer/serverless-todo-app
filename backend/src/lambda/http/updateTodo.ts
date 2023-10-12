@@ -4,6 +4,7 @@ import * as middy from 'middy'
 import { cors, httpErrorHandler } from 'middy/middlewares'
 
 import { createLogger } from '../../utils/logger'
+import { getUserId } from '../../auth/utils'
 import { updateTodo } from '../../service/todoService'
 import { UpdateTodoRequest } from '../../requests/UpdateTodoRequest'
 
@@ -15,13 +16,15 @@ export const handler = middy(
 
     try {
       const todoId = event.pathParameters.todoId
+      const userId: string = getUserId(event)
       const updateTodoRequest: UpdateTodoRequest = JSON.parse(event.body)
 
-      await updateTodo(todoId, updateTodoRequest)
+      await updateTodo(userId, todoId, updateTodoRequest)
       logger.info(`Successfully updated the todo: ${todoId}`)
 
       return {
-        statusCode: 204
+        statusCode: 204,
+        body: ''
       }
     } catch (error) {
       logger.error(`Error: ${error.message}`)

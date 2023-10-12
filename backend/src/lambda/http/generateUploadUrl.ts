@@ -4,6 +4,7 @@ import * as middy from 'middy'
 import { cors, httpErrorHandler } from 'middy/middlewares'
 
 import { createLogger } from '../../utils/logger'
+import { getUserId } from '../../auth/utils'
 import { createAttachmentPresignedUrl } from '../../service/todoService'
 
 const logger = createLogger('generateUploadUrl')
@@ -14,7 +15,8 @@ export const handler = middy(
 
     try {
       const todoId = event.pathParameters.todoId
-      const signedUrl: string = await createAttachmentPresignedUrl(todoId)
+      const userId: string = getUserId(event)
+      const signedUrl: string = await createAttachmentPresignedUrl(userId, todoId)
       logger.info('Successfully created signed url.')
 
       return {
